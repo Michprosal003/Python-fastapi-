@@ -1,0 +1,393 @@
+pip install fastapi
+pip install "uvicorn[standard]"
+pip install python-multipart sqlalchemy jinja2
+
+
+uvicorn main:app --reload --port 5000
+
+
+
+templates 
+base.html 
+
+_____________________________________________________________________________
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Título de tu aplicación</title>
+    <!-- Agregar enlaces a los estilos CSS de Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Agregar enlace a tu propio archivo CSS personalizado -->
+    <link rel="stylesheet" href="/static/css/styles.css"> 
+    
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand text-center" href="#">Curso de Python FASTAPI</a>
+  </nav>
+  
+  
+  
+  
+
+<div class="container mt-4">
+    {% block content %}{% endblock %}
+</div>
+
+<!-- Agregar los scripts de JavaScript de Bootstrap al final del documento para mejorar la velocidad de carga -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>
+
+
+
+
+
+index.html 
+
+_________________________________________________________
+
+{% extends 'base.html' %}
+ 
+{% block content %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous" />
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1"> <!-- Cambiado de col-lg-8 a col-lg-10 -->
+            <!-- Agregar un formulario de búsqueda -->
+            <form action="/" method="get" class="mb-3">
+                <div class="input-group">
+                    <input type="text" name="search" id="search" class="form-control" placeholder="Buscar..." value="{{ search }}">
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-primary">Buscar</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearSearch()">Limpiar</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="text-center mb-3">
+                <a href="/agregar_nuevo/" class="btn btn-primary">Agregar Estudiante</a>
+            </div>
+
+            <!-- Hacer la tabla responsive -->
+            <div class="table-responsive">
+                <table class="table table-bordered {% if estudiantes %}table-striped{% endif %} bg-light">
+                    <thead class="bg-dark text-white">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Cargo</th>
+                            <th>Especialidad</th>
+                            <th class="text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rs in estudiantes %}
+                            <tr>
+                                <td>{{ rs.id }}</td>
+                                <td>{{ rs.nombre }}</td>
+                                <td>{{ rs.cargo }}</td>
+                                <td>{{ rs.especialidad }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <a href="/editar/{{ rs.id }}" class="btn btn-dark btn-sm"><i class="fas fa-edit"></i></a>
+                                        <a href="/eliminar/{{ rs.id }}" class="btn btn-danger btn-sm ml-1"><i class="fas fa-trash-alt"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}    
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Agregar enlaces de paginación -->
+            <nav aria-label="Navegación de página">
+                <ul class="pagination justify-content-center">
+                    {% set total_pages = (estudiantes|length - 1) // per_page + 5 %}
+                    {% for p in range(1, total_pages + 1) %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link" href="?page={{ p }}&per_page={{ per_page }}&search={{ search }}">{{ p }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<script>
+    function clearSearch() {
+        document.getElementById('search').value = '';
+    }
+</script>
+{% endblock content %}
+
+
+
+agregar.html
+
+________________________________________________
+
+{% extends 'base.html' %}
+ 
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8 col-sm-10">
+        <form action="/agregar" method="post"> 
+            <div class="mb-3">
+                <label>Nombre</label>
+                <input type="text" name="nombre" placeholder="Nombre" class="form-control" />
+            </div> 
+            <div class="mb-3">
+                <label>Cargo</label>
+                <input type="text" name="cargo" placeholder="Cargo" class="form-control" />
+            </div> 
+            <div class="mb-3">
+                <label>Especialidad</label>
+                <input type="text" name="especialidad" placeholder="Especialidad" class="form-control" />
+            </div> 
+            <input type="submit" value="Guardar" class="btn btn-danger mb-3"/>  
+        </form> 
+        <!-- Botón para regresar -->
+        <button onclick="goBack()" class="btn btn-secondary">Regresar</button>
+    </div>
+</div>
+
+<script>
+    function goBack() {
+        window.history.back();
+    }
+</script>
+
+{% endblock %}
+
+editar.html 
+
+__________________________________
+
+{% extends 'base.html' %}
+
+{% block content %}
+
+<form action="/actualizar/{{ estudiante.id }}" method="post">
+    <div class="mb-3">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" placeholder="Nombre" class="form-control" value="{{ estudiante.nombre }}" required>
+    </div> 
+    <div class="mb-3">
+        <label for="cargo">Cargo</label>
+        <input type="text" id="cargo" name="cargo" placeholder="Cargo" class="form-control" value="{{ estudiante.cargo }}" required>
+    </div> 
+    <div class="mb-3">
+        <label for="especialidad">Especialidad</label>
+        <input type="text" id="especialidad" name="especialidad" placeholder="Especialidad" class="form-control" value="{{ estudiante.especialidad }}" required>
+    </div> 
+     
+    <input type="submit" value="Actualizar" class="btn btn-primary mb-3"/>  
+</form> 
+
+{% endblock content %}
+
+
+
+static/css/styles.css
+
+styles.css
+
+body{
+
+    background-image: radial-gradient( circle farthest-corner at 10% 20%,  rgba(251,221,19,1) 0.1%, rgba(255,153,1,1) 90% );
+}
+
+
+
+
+
+database.py 
+
+_________________________________________
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+DB_URL = 'sqlite:///anspa.sqlite3'
+
+engine = create_engine(DB_URL, connect_args={'check_same_thread': False})
+sessionlocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+
+
+
+main.py 
+
+_____________________________________________
+
+from fastapi import FastAPI, Request, Depends, Form, status
+from fastapi.templating import Jinja2Templates
+import models
+from database import engine, sessionlocal
+from sqlalchemy.orm import Session
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import or_
+from fastapi import Query
+
+# Crear todas las tablas definidas en los modelos en la base de datos
+models.Base.metadata.create_all(bind=engine)
+
+# Inicializar las plantillas Jinja2
+templates = Jinja2Templates(directory="templates")
+
+# Inicializar la aplicación FastAPI
+app = FastAPI()
+
+# Montar la carpeta 'static' para servir archivos estáticos
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Función para obtener la sesión de la base de datos
+
+
+def get_db():
+    db = sessionlocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Ruta principal que muestra la lista de estudiantes
+
+
+@app.get("/")
+async def home(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=5, le=100),
+    search: str = Query(default="", alias=""),
+    db: Session = Depends(get_db)
+):
+    # Consulta de estudiantes
+    estudiantes_query = db.query(models.Estudiante)
+
+    # Aplicar filtro de búsqueda si se proporciona
+    if search:
+        estudiantes_query = estudiantes_query.filter(
+            or_(
+                models.Estudiante.nombre.ilike(f"%{search}%"),
+                models.Estudiante.cargo.ilike(f"%{search}%"),
+                models.Estudiante.especialidad.ilike(f"%{search}%"),
+            )
+        )
+
+    # Realizar paginación
+    estudiantes = estudiantes_query.offset(
+        (page - 1) * per_page).limit(per_page).all()
+
+    # Renderizar la plantilla HTML con los datos de los estudiantes
+    return templates.TemplateResponse("index.html", {"request": request, "estudiantes": estudiantes, "page": page, "per_page": per_page, "search": search})
+
+# Ruta para agregar un nuevo estudiante
+
+
+@app.post("/agregar")
+async def agregar(request: Request, nombre: str = Form(...), cargo: str = Form(...), especialidad: str = Form(...), db: Session = Depends(get_db)):
+    try:
+        # Crear un nuevo estudiante en la base de datos
+        estudiante = models.Estudiante(
+            nombre=nombre, cargo=cargo, especialidad=especialidad)
+        db.add(estudiante)
+        db.commit()
+    except Exception as e:
+        # Manejar excepciones (por ejemplo, errores de base de datos) de manera apropiada
+        return {"error": str(e)}
+    # Redirigir a la página principal después de agregar el estudiante
+    return RedirectResponse(url=app.url_path_for("home"), status_code=status.HTTP_303_SEE_OTHER)
+
+# Ruta para mostrar el formulario de agregar nuevo estudiante
+
+
+@app.get("/agregar_nuevo")
+async def agregar_nuevo(request: Request):
+    return templates.TemplateResponse("agregar.html", {"request": request})
+
+# Ruta para mostrar el formulario de edición de un estudiante
+
+
+@app.get("/editar/{estudiante_id}")
+async def editar(request: Request, estudiante_id: int, db: Session = Depends(get_db)):
+    estudiante = db.query(models.Estudiante).filter(
+        models.Estudiante.id == estudiante_id).first()
+    return templates.TemplateResponse("editar.html", {"request": request, "estudiante": estudiante})
+
+
+@app.post("/actualizar/{estudiante_id}")
+async def actualizar(request: Request, estudiante_id: int, nombre: str = Form(...), cargo: str = Form(...), especialidad: str = Form(...), db: Session = Depends(get_db)):
+    estudiante = db.query(models.Estudiante).filter(
+        models.Estudiante.id == estudiante_id).first()
+    estudiante.nombre = nombre
+    estudiante.cargo = cargo
+    estudiante.especialidad = especialidad
+    db.commit()
+    return RedirectResponse(url=app.url_path_for("home"), status_code=status.HTTP_303_SEE_OTHER)
+
+# Ruta para eliminar un estudiante
+
+
+@app.get("/eliminar/{estudiante_id}")
+async def eliminar(request: Request, estudiante_id: int, db: Session = Depends(get_db)):
+    # Obtener el estudiante de la base de datos por su ID
+    estudiante = db.query(models.Estudiante).filter(
+        models.Estudiante.id == estudiante_id).first()
+    # Eliminar el estudiante de la base de datos
+    db.delete(estudiante)
+    db.commit()
+    # Redirigir a la página principal después de eliminar el estudiante
+    return RedirectResponse(url=app.url_path_for("home"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+
+models.py 
+
+_____________________________________________
+
+from sqlalchemy import Column, Integer, String
+from database import Base
+
+
+class Estudiante(Base):
+    __tablename__ = 'estudiantes'
+    id = Column(Integer, primary_key=True)
+    nombre = Column(String(150))
+    cargo = Column(String(150))
+    especialidad = Column(String(150))
+
+    def __repr__(self):
+        return '<Estudiante %r>' % (self.id)
+
+
+
+
+
+uvicorn main:app --reload --port 5000
+
+
+
+
+
+
+
+
+
+
+
